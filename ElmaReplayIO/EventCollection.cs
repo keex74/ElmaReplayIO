@@ -41,10 +41,10 @@ namespace ElmaReplayIO
                 for (int i = 0; i < nEvents; i++)
                 {
                     var time = br.ReadDouble();
-                    var info = br.ReadInt16();
+                    var objectId = br.ReadInt16();
                     var type = br.ReadByte();
                     var v2 = br.ReadByte();
-                    var info2 = br.ReadSingle();
+                    var groundTouchStrength = br.ReadSingle();
 
                     var t = type switch
                     {
@@ -57,7 +57,7 @@ namespace ElmaReplayIO
                         _ => throw new RecParsingException($"Invalid event type: {type}")
                     };
 
-                    var ev = new Event(time, t, info, info2);
+                    var ev = new Event(time, t, objectId, v2, groundTouchStrength);
                     res.Add(ev);
                 }
             }
@@ -67,6 +67,21 @@ namespace ElmaReplayIO
             }
 
             return new EventCollection(res);
+        }
+
+
+        public void WriteTo(BinaryWriter writer)
+        {
+            writer.Write(this.Count);
+            foreach (var e in this)
+            {
+                var time = e.Time.TotalMilliseconds / 2_289.377_289_38;
+                writer.Write(time);
+                writer.Write(e.ObjectID);
+                writer.Write((byte)e.Type);
+                writer.Write(e.V2);
+                writer.Write(e.GroundTouchStrength);
+            }
         }
     }
 }

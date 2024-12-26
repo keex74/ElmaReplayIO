@@ -18,6 +18,8 @@
 
         static int Main(string[] args)
         {
+            var filename = string.Empty;
+
             if (args.Length == 0)
             {
                 Console.WriteLine("Syntax: ");
@@ -25,8 +27,12 @@
                 Console.WriteLine("    <recPath>: The path to the base replay file to use as comparison.");
                 return 1;
             }
+            else
+            {
+                filename = args[0];
+            }
 
-            var fi = new FileInfo(args[0]);
+            var fi = new FileInfo(filename);
             if (!fi.Exists)
             {
                 Console.WriteLine("Replay file does not exist");
@@ -83,6 +89,7 @@
             foreach (var f in appleTouches)
             {
                 Console.WriteLine($"Apple #{i:000} taken at {f.Time.TotalSeconds:0.000} s");
+                i++;
             }
 
             // Setup a file system watcher that checks the !last.rec in the same folder as the base replay
@@ -102,8 +109,8 @@
             fsw.Changed += HandleLastChanged;
             changeTimer.Elapsed += HandleChangeTimerElapsed;
             fsw.EnableRaisingEvents = true;
-            Console.WriteLine("Press any key to stop and exit the program.");
-            Console.ReadKey();
+            Console.WriteLine("Press Enter to stop and exit the program.");
+            Console.ReadLine();
             return 0;
         }
 
@@ -121,10 +128,22 @@
             Console.WriteLine();
             Console.WriteLine("-----------------------------------");
             var path = Path.Combine(recPath!, "!last.rec");
-            var newData = File.ReadAllBytes(path);
-            using var ms = new MemoryStream(newData);
-            var newRec = Replay.ParseFrom(ms);
-            if (newRec[0].Header.LevelName != baseRecLevelName)
+
+            Replay newRec;
+            try
+            {
+                using var fileRec = File.OpenRead(path);
+                newRec = Replay.ParseFrom(fileRec);
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine("Failed to read new replay: " + ex.Message);
+                return;
+            }
+
+            Console.WriteLine("New replay for level: " + newRec.MainRide.Header.LevelName);
+
+            if (newRec.MainRide.Header.LevelName != baseRecLevelName)
             {
                 Console.WriteLine($"New replay is for a different level than the base replay!");
                 return;
@@ -140,14 +159,23 @@
                 Console.WriteLine(output.ToString());
             }
 
-            var outpath = Path.Combine(recPath!, "!automrg.rec");
-            var allData = new List<byte>();
-            allData.AddRange(baseRecData!);
-            newData[8] = 1; // Is multi ride
-            allData.AddRange(newData);
-            allData[8] = 1; // Is multi ride
-            File.WriteAllBytes(outpath, allData.ToArray());
-            Console.WriteLine($"Created auto-merge file!");
+            try
+            {
+                var outpath = Path.Combine(recPath!, "!automrg.rec");
+                var mergeRec = new List<Ride>
+            {
+                baseReplay!.MainRide,
+                newRec.MainRide,
+            };
+                var merged = new Replay(mergeRec);
+                using var os = File.OpenWrite(outpath);
+                merged.WriteReplay(os);
+                Console.WriteLine($"Created auto-merge file!");
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine("Failed to merge replays: " + ex.Message);
+            }
         }
 
         private class AppleTimeOutput

@@ -77,5 +77,20 @@ namespace ElmaReplayIO
         /// The collision strength (?).
         /// </summary>
         public readonly byte CollisionStrength = collisionStrength;
+
+        internal byte ThrottleDataByte
+        {
+            get
+            {
+                byte res = 0;
+                if (this.Direction == Direction.Right)
+                {
+                    res = 2;
+                }
+
+                res += this.ThrottleApplied ? (byte)1 : (byte)0;
+                return res;
+            }
+        }
     }
 }

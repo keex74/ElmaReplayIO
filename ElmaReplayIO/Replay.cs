@@ -38,9 +38,9 @@ namespace ElmaReplayIO
         /// </summary>
         /// <param name="stream">The input data stream.</param>
         /// <returns>The replay data.</returns>
+        /// <exception cref="ArgumentNullException">If  <paramref name="stream"/> is null.</exception>
         /// <exception cref="RecParsingException">If parsing the replay fails, usually due to invalid structure.</exception>
         /// <exception cref="System.IO.IOException">If an IO exception occurs when reading the from input stream.</exception>
-        /// <exception cref="ArgumentNullException">If  <paramref name="stream"/> is null.</exception>
         public static Replay ParseFrom(Stream stream)
         {
             ArgumentNullException.ThrowIfNull(stream);
@@ -58,6 +58,28 @@ namespace ElmaReplayIO
             }
 
             return new Replay(res);
+        }
+
+        /// <summary>
+        /// Write the replay data into the given stream.
+        /// </summary>
+        /// <param name="stream">The output stream.</param>
+        /// <exception cref="ArgumentNullException">If  <paramref name="stream"/> is null.</exception>
+        /// <exception cref="RecWritingException">If writing the replay fails.</exception>
+        /// <exception cref="System.IO.IOException">If an IO exception occurs when writing to the input stream.</exception>
+        public void WriteReplay(Stream stream)
+        {
+            if (this.Count == 0)
+            {
+                throw new RecWritingException("The replay contains no rides.");
+            }
+
+            using var writer = new BinaryWriter(stream);
+            var isMulti = this.Count > 1;
+            foreach (var ride in this)
+            {
+                ride.WriteTo(writer, isMulti);
+            }
         }
     }
 }

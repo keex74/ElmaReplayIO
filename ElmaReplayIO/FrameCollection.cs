@@ -110,6 +110,53 @@ namespace ElmaReplayIO
             return new FrameCollection(res);
         }
 
+        public void WriteTo(BinaryWriter writer)
+        {
+            WriteList(writer, (f) => f.BikePosition.X);
+            WriteList(writer, (f) => f.BikePosition.Y);
+
+            WriteList(writer, (f) => f.LeftWheelPosition.X);
+            WriteList(writer, (f) => f.LeftWheelPosition.Y);
+            WriteList(writer, (f) => f.RightWheelPosition.X);
+            WriteList(writer, (f) => f.RightWheelPosition.Y);
+            WriteList(writer, (f) => f.HeadPosition.X);
+            WriteList(writer, (f) => f.HeadPosition.Y);
+            WriteList(writer, (f) => f.BikeRotation);
+
+            WriteList(writer, (f) => f.LeftWheelRotation);
+            WriteList(writer, (f) => f.RightWheelRotation);
+            WriteList(writer, (f) => f.ThrottleDataByte);
+            WriteList(writer, (f) => f.BackWheelSpeed);
+            WriteList(writer, (f) => f.CollisionStrength);
+        }
+
+        private void WriteList(BinaryWriter writer, Func<Frame, float> selector)
+        {
+            foreach (var f in this)
+            {
+                var value = selector(f);
+                writer.Write(value);
+            }
+        }
+
+        private void WriteList(BinaryWriter writer, Func<Frame, short> selector)
+        {
+            foreach (var f in this)
+            {
+                var value = selector(f);
+                writer.Write(value);
+            }
+        }
+
+        private void WriteList(BinaryWriter writer, Func<Frame, byte> selector)
+        {
+            foreach (var f in this)
+            {
+                var value = selector(f);
+                writer.Write(value);
+            }
+        }
+
         private static void ReadList(BinaryReader br, int frameCount, List<float> list)
         {
             for (var i = 0; i < frameCount; i++)

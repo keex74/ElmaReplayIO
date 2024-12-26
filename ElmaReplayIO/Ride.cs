@@ -15,6 +15,8 @@ namespace ElmaReplayIO
     /// <param name="events">The event collection.</param>
     public class Ride(ReplayHeader header, FrameCollection frames, EventCollection events)
     {
+        private const int MAGICNUMBER = 0x00492f75;
+
         public ReplayHeader Header { get; } = header;
         public FrameCollection Frames { get; } = frames;
         public EventCollection Events { get; } = events;
@@ -34,7 +36,7 @@ namespace ElmaReplayIO
             try
             {
                 var magicNumber = br.ReadInt32();
-                if (magicNumber != 0x00492f75)
+                if (magicNumber != MAGICNUMBER)
                 {
                     throw new RecParsingException("Ride does not end with expected value");
                 }
@@ -45,7 +47,15 @@ namespace ElmaReplayIO
             {
                 throw new RecParsingException("Reached end of stream unexpectedly while parsing ride magic number.");
             }
+        }
 
+        internal void WriteTo(BinaryWriter writer, bool isMultiReplay)
+        {
+            var header = new ReplayHeader(isMultiReplay, this.Header);
+            header.WriteTo(writer);
+            this.Frames.WriteTo(writer);
+            this.Events.WriteTo(writer);
+            writer.Write(MAGICNUMBER);
         }
     }
 }

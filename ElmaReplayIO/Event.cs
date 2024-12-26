@@ -13,8 +13,9 @@ namespace ElmaReplayIO
     /// <param name="time">The time on which the event occurs in a weird value.</param>
     /// <param name="type">The type of the event.</param>
     /// <param name="objectID">The ID of the object associated with the event in the level.</param>
+    /// <param name="v2">An additional event value.</param>
     /// <param name="groundTouchStrength">Ground touch strength, whatever that means.</param>
-    public readonly struct Event(double time, EventType type, int objectID, float groundTouchStrength)
+    public readonly struct Event(double time, EventType type, short objectID, byte v2, float groundTouchStrength)
     {
         /// <summary>
         /// The time of the event in the replay.
@@ -29,7 +30,12 @@ namespace ElmaReplayIO
         /// <summary>
         /// The ID of the object in the level associated with this event.
         /// </summary>
-        public readonly int ObjectID = objectID;
+        public readonly short ObjectID = objectID;
+
+        /// <summary>
+        /// An additional data value.
+        /// </summary>
+        public readonly byte V2 = v2;
 
         /// <summary>
         /// The strength of the ground touch (?).

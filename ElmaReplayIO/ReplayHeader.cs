@@ -19,6 +19,18 @@ namespace ElmaReplayIO
     /// <param name="frameCount">The total number of frames in the ride.</param>
     public class ReplayHeader(bool isMultiReplay, bool isFlagTag, uint link, string levelName, int frameCount)
     {
+        private const uint VERSION = 0x83;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ReplayHeader"/> class.
+        /// </summary>
+        /// <param name="isMultiReplay">Whether the replay is part of a multi replay.</param>
+        /// <param name="source">A source header to copy values from.</param>
+        public ReplayHeader(bool isMultiReplay, ReplayHeader source)
+            : this(isMultiReplay, source.IsFlagTag, source.Link, source.LevelName, source.FrameCount)
+        {
+        }
+
         /// <summary>
         /// Gets a value indicating whether this is a multi-ride replay.
         /// </summary>
@@ -57,7 +69,7 @@ namespace ElmaReplayIO
             {
                 var frameCount = br.ReadInt32();
                 var version = br.ReadUInt32();
-                if (version != 0x83)
+                if (version != VERSION)
                 {
                     throw new RecParsingException($"Invalid replay identifier: {version}");
                 }
@@ -66,32 +78,47 @@ namespace ElmaReplayIO
                 var isFlagTag = br.ReadInt32() > 0;
                 var link = br.ReadUInt32();
                 var levelName = new StringBuilder();
-                while (true)
+                var chars = br.ReadChars(12);
+                for (int i = 0; i < 12; i++)
                 {
-                    var c = br.ReadByte();
-                    if (c == 0)
+                    if (chars[i] != 0)
                     {
-                        break;
+                        levelName.Append(chars[i]);
                     }
                     else
                     {
-                        levelName.Append((char)c);
-                    }
-
-                    if (levelName.Length > 32)
-                    {
-                        throw new RecParsingException($"Unexpected length of level name, read so far: {levelName}");
+                        break;
                     }
                 }
 
-                _ = br.ReadInt16();
-                _ = br.ReadByte();
+                _ = br.ReadInt32();
 
                 return new ReplayHeader(isMulti, isFlagTag, link, levelName.ToString(), frameCount);
             }
             catch (EndOfStreamException)
             {
                 throw new RecParsingException("Reached end of stream unexpectedly while parsing replay header.");
+            }
+        }
+
+        internal void WriteTo(BinaryWriter writer)
+        {
+            writer.Write(this.FrameCount);
+            writer.Write(VERSION);
+            writer.Write(this.IsMultiReplay ? 1 : 0);
+            writer.Write(this.IsFlagTag ? 1 : 0);
+            writer.Write(this.Link);
+            if (this.LevelName.Length > 12)
+            {
+                throw new FormatException("Levelname must not be longer than 12 characters.");
+            }
+            var levelName = System.Text.Encoding.ASCII.GetBytes(this.LevelName);
+            writer.Write(levelName);
+            writer.Write((byte)0);
+            var remain = 16 - levelName.Length - 1;
+            for (int i = 0; i < remain; i++)
+            {
+                writer.Write((byte)(i + 1));
             }
         }
     }
