@@ -1,6 +1,8 @@
 ﻿namespace ElmaReplayAutoMerger
 {
+    using System.Text;
     using ElmaReplayIO;
+    using Microsoft.VisualBasic;
 
     /// <summary>
     /// An example program for the ElmaReplayIO library.
@@ -10,6 +12,7 @@
     {
         static readonly System.Timers.Timer changeTimer = new(TimeSpan.FromMilliseconds(500));
         static string? recPath;
+        static Replay? baseReplay;
         static byte[]? baseRecData;
         static string? baseRecLevelName;
 
@@ -62,6 +65,7 @@
                 return 6;
             }
 
+            baseReplay = rec;
             var baseRide = rec.MainRide;
             // Output some stats
             Console.WriteLine("Input replay stats:");
@@ -114,6 +118,8 @@
         {
             changeTimer.Stop();
 
+            Console.WriteLine();
+            Console.WriteLine("-----------------------------------");
             var path = Path.Combine(recPath!, "!last.rec");
             var newData = File.ReadAllBytes(path);
             using var ms = new MemoryStream(newData);
@@ -124,6 +130,16 @@
                 return;
             }
 
+            var baseAppleTimes = baseReplay!.MainRide.Events.Where(e => e.Type == EventType.AppleTake).ToList();
+            var newAppleTimes = newRec!.MainRide.Events.Where(e => e.Type == EventType.AppleTake).ToList();
+            for (int i = 0; i < Math.Max(baseAppleTimes.Count, newAppleTimes.Count); i++)
+            {
+                Event? bat = i < baseAppleTimes.Count ? baseAppleTimes[i] : null;
+                Event? nat = i < newAppleTimes.Count ? newAppleTimes[i] : null;
+                var output = new AppleTimeOutput(i, bat, nat);
+                Console.WriteLine(output.ToString());
+            }
+
             var outpath = Path.Combine(recPath!, "!automrg.rec");
             var allData = new List<byte>();
             allData.AddRange(baseRecData!);
@@ -132,6 +148,46 @@
             allData[8] = 1; // Is multi ride
             File.WriteAllBytes(outpath, allData.ToArray());
             Console.WriteLine($"Created auto-merge file!");
+        }
+
+        private class AppleTimeOutput
+        {
+            private readonly Event? oldAt;
+            private readonly Event? newAt;
+
+            private readonly int idx;
+
+            public AppleTimeOutput(int idx, Event? oldAt, Event? newAt)
+            {
+                this.idx = idx;
+                this.oldAt = oldAt;
+                this.newAt = newAt;
+            }
+
+            public override string ToString()
+            {
+                if (this.oldAt.HasValue && this.newAt.HasValue)
+                {
+                    var tOld = oldAt.Value.Time.TotalSeconds;
+                    var tNew = newAt.Value.Time.TotalSeconds;
+                    var delta = tNew - tOld;
+                    return $"Apple #{this.idx:000} - {tOld:0.000} - {tNew:0.000} - Delta: {delta:0.000}s";
+                }
+                else if (this.oldAt.HasValue)
+                {
+                    var tOld = oldAt.Value.Time.TotalSeconds;
+                    return $"Apple #{this.idx:000} - {tOld:0.000} - ---";
+                }
+                else if (this.newAt.HasValue)
+                {
+                    var tNew = newAt.Value.Time.TotalSeconds;
+                    return $"Apple #{this.idx:000} - --- - {tNew:0.000}";
+                }
+                else
+                {
+                    return $"Apple #{this.idx:000} - --- - ---";
+                }
+            }
         }
     }
 }
