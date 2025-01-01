@@ -1,8 +1,6 @@
 ﻿namespace ElmaReplayAutoMerger
 {
-    using System.Text;
     using ElmaReplayIO;
-    using Microsoft.VisualBasic;
 
     /// <summary>
     /// An example program for the ElmaReplayIO library.
@@ -15,21 +13,69 @@
         static Replay? baseReplay;
         static byte[]? baseRecData;
         static string? baseRecLevelName;
-
         static int Main(string[] args)
         {
             var filename = string.Empty;
+            var outputBaseData = true;
+            var outputAppleTimes = true;
+            var parseEvents = false;
+            var parseFrames = false;
+            var runAutoComparison = false;
+
+            Range eventsRange = default;
+            Range framesRange = default;
 
             if (args.Length == 0)
             {
                 Console.WriteLine("Syntax: ");
-                Console.WriteLine("ElmaRecReaderAndMaker <recPath>");
+                Console.WriteLine("ElmaRecReaderAndMaker <options> <recPath>");
+                Console.WriteLine("    <options>:");
+                Console.WriteLine("        -nobase - Don't output base replay stats");
+                Console.WriteLine("        -noapples - Don't output apple times");
+                Console.WriteLine("        -f=<RangeExpression> - extract frame data");
+                Console.WriteLine("        -e=<RangeExpression> - extract event data");
+                Console.WriteLine("        -check - Start monitoring replay folder for new times to compare");
                 Console.WriteLine("    <recPath>: The path to the base replay file to use as comparison.");
                 return 1;
             }
-            else
+
+            try
             {
-                filename = args[0];
+                for (int a = 0; a < args.Length; a++)
+                {
+                    if (args[a].StartsWith("-e="))
+                    {
+                        parseEvents = true;
+                        eventsRange = ParseRange(args[a][3..]);
+                    }
+                    else if (args[a].StartsWith("-f="))
+                    {
+                        parseFrames = true;
+                        framesRange = ParseRange(args[a][3..]);
+                    }
+                    else if (args[a] == "-check")
+                    {
+                        runAutoComparison = true;
+                    }
+                    else if (args[a] == "-nobase")
+                    {
+                        outputBaseData = false;
+                    }
+                    else if (args[a] == "-noapples")
+                    {
+                        outputAppleTimes = false;
+                    }
+                    else
+                    {
+                        filename = args[a];
+                    }
+                }
+
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine($"Invalid range arguments: {ex.Message}");
+                return 1;
             }
 
             var fi = new FileInfo(filename);
@@ -73,23 +119,15 @@
 
             baseReplay = rec;
             var baseRide = rec.MainRide;
-            // Output some stats
-            Console.WriteLine("Input replay stats:");
-            Console.WriteLine($"{baseRide.Header.FrameCount} frames");
-            Console.WriteLine($"{baseRide.Header.FrameCount * 33.3333 / 1000.0} s duration (by frame count).");
-            if (baseRide.Events.Any(e => e.Type == EventType.ObjectTouch))
-            {
-                var lastObjectTouch = baseRide.Events.Where(e => e.Type == EventType.ObjectTouch).Last();
-                Console.WriteLine($"{lastObjectTouch.Time.TotalSeconds:0.000} s last object touch.");
-            }
 
-            var appleTouches = baseRide.Events.Where(e => e.Type == EventType.AppleTake);
-            var i = 0;
-            Console.WriteLine("Apple takes:");
-            foreach (var f in appleTouches)
+            if (outputBaseData) DumpBaseStats(baseRide);
+            if (outputAppleTimes) DumpAppleTimes(baseRide);
+            if (parseFrames) DumpFrames(baseRide, framesRange);
+            if (parseEvents) DumpEvents(baseRide, eventsRange);
+
+            if (!runAutoComparison)
             {
-                Console.WriteLine($"Apple #{i:000} taken at {f.Time.TotalSeconds:0.000} s");
-                i++;
+                return 0;
             }
 
             // Setup a file system watcher that checks the !last.rec in the same folder as the base replay
@@ -112,6 +150,145 @@
             Console.WriteLine("Press Enter to stop and exit the program.");
             Console.ReadLine();
             return 0;
+        }
+
+        static void DumpBaseStats(Ride baseRide)
+        {
+            // Output some stats
+            Event? lastObjectTouch = default;
+            if (baseRide.Events.Any(e => e.Type == EventType.ObjectTouch))
+            {
+                lastObjectTouch = baseRide.Events.Where(e => e.Type == EventType.ObjectTouch).Last();
+            }
+
+            Console.WriteLine($@"Input replay stats:
+    Level: {baseRide.Header.LevelName} ({baseRide.Header.Link})
+    Frames: {baseRide.Header.FrameCount}
+    Events: {baseRide.Events.Count}
+    Dur. (frames): {baseRide.Header.FrameCount * 33.3333 / 1000.0} s
+    Dur. (object): {(lastObjectTouch.HasValue ? lastObjectTouch.Value.Time.TotalSeconds.ToString("0.000") : "---")} s");
+
+        }
+
+        static void DumpAppleTimes(Ride baseRide)
+        {
+            Console.WriteLine("Apple take times:");
+            var appleTouches = baseRide.Events.Where(e => e.Type == EventType.AppleTake);
+            var i = 0;
+            foreach (var f in appleTouches)
+            {
+                Console.WriteLine($"    Apple #{i++:000} : {f.Time.TotalSeconds:0.000} s");
+            }
+        }
+
+        static void DumpFrames(Ride ride, Range range)
+        {
+            try
+            {
+                var offsets = range.GetOffsetAndLength(ride.Header.FrameCount);
+                var frames = ride.Frames.Skip(offsets.Offset).Take(offsets.Length);
+                int idx = offsets.Offset;
+                foreach (var f in frames)
+                {
+                    DumpFrame(idx++, f);
+                }
+            }
+            catch (System.ArgumentOutOfRangeException)
+            {
+                Console.WriteLine("Invalid frame range: Arguments of out range");
+            }
+        }
+
+        static void DumpFrame(int idx, Frame frame)
+        {
+            Console.WriteLine($@"Frame #{idx}
+    Bike       : {frame.BikePosition} Rotation {frame.BikeRotation}
+    Head       : {frame.HeadPosition}
+    Left Wheel : {frame.LeftWheelPosition} Rotation: {frame.LeftWheelRotation}
+    Right Wheel: {frame.RightWheelPosition} Rotation: {frame.RightWheelRotation}
+    Direction  : {frame.Direction}
+    Throttle   : {(frame.ThrottleApplied ? "yes" : "no")}");
+        }
+
+        static void DumpEvents(Ride ride, Range range)
+        {
+            try
+            {
+                var offsets = range.GetOffsetAndLength(ride.Header.FrameCount);
+                var events = ride.Events.Skip(offsets.Offset).Take(offsets.Length);
+                int idx = offsets.Offset;
+                foreach (var f in events)
+                {
+                    DumpEvent(idx++, f);
+                }
+            }
+            catch (System.ArgumentOutOfRangeException)
+            {
+                Console.WriteLine("Invalid event range: Arguments of out range");
+            }
+        }
+
+        static void DumpEvent(int idx, Event ev)
+        {
+            Console.WriteLine($@"Event #{idx}
+    Time   : {ev.Time}
+    Type   : {ev.Type}
+    Object : {ev.ObjectID}");
+        }
+
+        static Range ParseRange(string range)
+        {
+            if (range == "..")
+            {
+                return new Range(Index.FromStart(0), Index.FromEnd(1));
+            }
+
+            var parts = range.Split("..");
+            var l = parts.Length;
+            if (l != 2)
+            {
+                throw new FormatException("Invalid range expression - invalid count");
+            }
+
+            Index startIdx;
+            Index endIdx;
+
+            if (string.IsNullOrEmpty(parts[0]))
+            {
+                startIdx = Index.FromStart(0);
+                endIdx = ParseIndex(parts[1]);
+            }
+            else if (string.IsNullOrEmpty(parts[1]))
+            {
+                startIdx = ParseIndex(parts[0]);
+                endIdx = Index.FromEnd(1);
+            }
+            else
+            {
+                startIdx = ParseIndex(parts[0]);
+                endIdx = ParseIndex(parts[1]);
+            }
+
+            return new Range(startIdx, endIdx);
+        }
+
+        static Index ParseIndex(string v)
+        {
+            bool fromEnd = false;
+            if (v.StartsWith("^"))
+            {
+                fromEnd = true;
+                v = v[1..];
+            }
+
+            if (int.TryParse(v, out int x))
+            {
+                return new Index(x, fromEnd);
+            }
+            else
+            {
+                throw new FormatException($"Invalid range expression, invalid number: {v}");
+            }
         }
 
         static void HandleLastChanged(object? sender, FileSystemEventArgs e)

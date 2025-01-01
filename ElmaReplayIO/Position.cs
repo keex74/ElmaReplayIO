@@ -24,5 +24,10 @@ namespace ElmaReplayIO
         /// The Y coordinate.
         /// </summary>
         public readonly T Y = y;
+
+        public override string ToString()
+        {
+            return $"{this.X:0.####}x{this.Y:0.####}";
+        }
     }
 }
