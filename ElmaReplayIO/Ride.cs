@@ -28,11 +28,24 @@ namespace ElmaReplayIO
         /// <returns>The ride.</returns>
         /// <exception cref="RecParsingException">If parsing the ride fails.</exception>
         /// <exception cref="IOException">If reading from the input data fails.</exception>
-        internal static Ride ParseFrom(BinaryReader br)
+        internal static Ride ParseFrom(BinaryReader br, string? sourcePath)
         {
             var header = ReplayHeader.ParseFrom(br);
+            ElmaLevel? level = null;
+            if (!string.IsNullOrEmpty(sourcePath))
+            {
+                try
+                {
+                    level = LevTools.FindLevel(header, sourcePath);
+                }
+                catch (System.Exception)
+                {
+                    // Error while finding a level, tough luck.
+                }
+            }
+
             var frames = FrameCollection.ParseFrom(br, header);
-            var events = EventCollection.ParseFrom(br, header);
+            var events = EventCollection.ParseFrom(br, header, level);
             try
             {
                 var magicNumber = br.ReadInt32();

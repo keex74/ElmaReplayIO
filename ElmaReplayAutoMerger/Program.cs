@@ -90,7 +90,7 @@
             try
             {
                 using var fs = File.OpenRead(fi.FullName);
-                rec = Replay.ParseFrom(fs);
+                rec = Replay.ParseFrom(fs, fi.FullName);
             }
             catch (RecParsingException ex)
             {
@@ -234,6 +234,13 @@
     Time   : {ev.Time}
     Type   : {ev.Type}
     Object : {ev.ObjectID}");
+            if (ev.ObjectDescription.HasValue && ev.Type == EventType.ObjectTouch)
+            {
+                var obj = ev.ObjectDescription.Value;
+                Console.WriteLine($@"        Object type: {obj.Type}
+        Position   : {obj.Position}
+        Gravity    : {obj.AppleGravity}");
+            }
         }
 
         static Range ParseRange(string range)
@@ -310,7 +317,7 @@
             try
             {
                 using var fileRec = File.OpenRead(path);
-                newRec = Replay.ParseFrom(fileRec);
+                newRec = Replay.ParseFrom(fileRec, path);
             }
             catch (System.Exception ex)
             {

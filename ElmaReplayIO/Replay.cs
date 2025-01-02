@@ -37,18 +37,19 @@ namespace ElmaReplayIO
         /// Parse replay data from the given input data stream.
         /// </summary>
         /// <param name="stream">The input data stream.</param>
+        /// <param name="sourcePath">The source path of the replay file if available.</param>
         /// <returns>The replay data.</returns>
         /// <exception cref="ArgumentNullException">If  <paramref name="stream"/> is null.</exception>
         /// <exception cref="RecParsingException">If parsing the replay fails, usually due to invalid structure.</exception>
         /// <exception cref="System.IO.IOException">If an IO exception occurs when reading the from input stream.</exception>
-        public static Replay ParseFrom(Stream stream)
+        public static Replay ParseFrom(Stream stream, string? sourcePath)
         {
             ArgumentNullException.ThrowIfNull(stream);
             using var br = new BinaryReader(stream);
             var res = new List<Ride>();
             while (br.BaseStream.Position < br.BaseStream.Length)
             {
-                var ride = Ride.ParseFrom(br);
+                var ride = Ride.ParseFrom(br, sourcePath);
                 res.Add(ride);
             }
 

@@ -29,10 +29,11 @@ namespace ElmaReplayIO
         /// </summary>
         /// <param name="br">A binary reader around the input data.</param>
         /// <param name="header">The replay header.</param>
+        /// <param name="level">The associated level if available</param>
         /// <returns>The event collection.</returns>
         /// <exception cref="RecParsingException">If parsing the event collection fails.</exception>
         /// <exception cref="IOException">If reading from the input data fails.</exception>
-        internal static EventCollection ParseFrom(BinaryReader br, ReplayHeader header)
+        internal static EventCollection ParseFrom(BinaryReader br, ReplayHeader header, ElmaLevel? level)
         {
             var res = new List<Event>();
             try
@@ -57,7 +58,13 @@ namespace ElmaReplayIO
                         _ => throw new RecParsingException($"Invalid event type: {type}")
                     };
 
-                    var ev = new Event(time, t, objectId, v2, groundTouchStrength);
+                    ObjectDescription? obj = null;
+                    if (level != null && t == EventType.ObjectTouch && objectId >= 0 && objectId < level.Objects.Count)
+                    {
+                        obj = level.Objects.ElementAt(objectId);
+                    }
+
+                    var ev = new Event(time, t, objectId, v2, groundTouchStrength, obj);
                     res.Add(ev);
                 }
             }
