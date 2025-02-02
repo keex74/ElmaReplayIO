@@ -10,16 +10,43 @@ namespace ElmaReplayIO
     /// <summary>
     /// Defines a single ride in an Elma replay.
     /// </summary>
-    /// <param name="header">The ride header.</param>
-    /// <param name="frames">The frame collection.</param>
-    /// <param name="events">The event collection.</param>
-    public class Ride(ReplayHeader header, FrameCollection frames, EventCollection events)
+    public class Ride
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Ride"/>  class.
+        /// </summary>
+        /// <param name="header">The ride header.</param>
+        /// <param name="frames">The frame collection.</param>
+        /// <param name="events">The event collection.</param>
+        public Ride(ReplayHeader header, FrameCollection frames, EventCollection events)
+        {
+            this.Header = header;
+            this.Frames = frames;
+            this.Events = events;
+            this.ApplesTaken = events.Where(e => e.Type == EventType.AppleTake).Count();
+        }
+
         private const int MAGICNUMBER = 0x00492f75;
 
-        public ReplayHeader Header { get; } = header;
-        public FrameCollection Frames { get; } = frames;
-        public EventCollection Events { get; } = events;
+        /// <summary>
+        /// Gets the ride header.
+        /// </summary>
+        public ReplayHeader Header { get; }
+
+        /// <summary>
+        /// Gets the ride frames.
+        /// </summary>
+        public FrameCollection Frames { get; }
+
+        /// <summary>
+        /// Gets the ride events.
+        /// </summary>
+        public EventCollection Events { get; }
+
+        /// <summary>
+        /// Gets the number of apples taken in this ride.
+        /// </summary>
+        public int ApplesTaken { get; }
 
         /// <summary>
         /// Parse a ride from the input data.

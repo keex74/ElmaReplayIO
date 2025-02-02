@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ElmaReplayIO", "ElmaReplayI
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ElmaReplayAutoMerger", "ElmaReplayAutoMerger\ElmaReplayAutoMerger.csproj", "{849C04D6-F58F-49F5-930F-6920E0827393}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ElmaReplayPainter", "ElmaReplayPainter\ElmaReplayPainter.csproj", "{79DA5207-7ECD-4DDE-9F07-C578B537134B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{849C04D6-F58F-49F5-930F-6920E0827393}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{849C04D6-F58F-49F5-930F-6920E0827393}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{849C04D6-F58F-49F5-930F-6920E0827393}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79DA5207-7ECD-4DDE-9F07-C578B537134B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79DA5207-7ECD-4DDE-9F07-C578B537134B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79DA5207-7ECD-4DDE-9F07-C578B537134B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79DA5207-7ECD-4DDE-9F07-C578B537134B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

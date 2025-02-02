@@ -32,6 +32,12 @@ namespace ElmaReplayIO
                 {
                     MatchCasing = MatchCasing.CaseInsensitive,
                 };
+
+                if (!Directory.Exists(levelDir))
+                {
+                    return null;
+                }
+
                 var levs = Directory.GetFiles(levelDir, header.LevelName, opts);
 
                 foreach (var l in levs)

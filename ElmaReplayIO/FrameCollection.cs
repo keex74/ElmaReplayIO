@@ -71,7 +71,7 @@ namespace ElmaReplayIO
                 // If list reading was successful then the lists will have the correct lengths.
                 var a = 0;
                 var bikeX = floatLists[a++][i];
-                var bikeY = floatLists[a++][i];
+                var bikeY = -floatLists[a++][i];
                 a = 0;
                 var leftWheelX = shortLists[a++][i];
                 var leftWheelY = shortLists[a++][i];

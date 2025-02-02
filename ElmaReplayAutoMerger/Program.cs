@@ -36,7 +36,20 @@
                 Console.WriteLine("        -e=<RangeExpression> - extract event data");
                 Console.WriteLine("        -check - Start monitoring replay folder for new times to compare");
                 Console.WriteLine("    <recPath>: The path to the base replay file to use as comparison.");
+                Console.WriteLine("  OR");
+                Console.WriteLine("  -collect <srcPath> <targetPath>");
+                Console.WriteLine("  OR");
+                Console.WriteLine("  -applestats -avg <num> -p <targetPath>");
                 return 1;
+            }
+
+            if (args[0] == "-collect")
+            {
+                return AutoCollector.Run(args);
+            }
+            else if (args[0] == "-applestats")
+            {
+                return AppleStats.Run(args);
             }
 
             try
