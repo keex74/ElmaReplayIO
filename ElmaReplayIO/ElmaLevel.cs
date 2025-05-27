@@ -10,11 +10,22 @@ namespace ElmaReplayIO
     /// <summary>
     /// Defines an elma level, with only barebones properties for now.
     /// </summary>
+    /// <param name="intact">Indicates if the level was read intact.</param>
     /// <param name="name">The level name.</param>
     /// <param name="link">The level link parameter.</param>
     /// <param name="objects">The list of objects in the level.</param>
-    public class ElmaLevel(string name, uint link, IReadOnlyCollection<ObjectDescription> objects, IReadOnlyCollection<ElmaPolygon> polygons, IReadOnlyCollection<ElmaPolygon> grassPolygons, Position<double> bottomLeft, Position<double> topRight)
+    /// <param name="polygons">The list of non-grass polygons.</param>
+    /// <param name="grassPolygons">The list of grass polygons.</param>
+    /// <param name="pictures">The list of pictures in the level.</param>
+    /// <param name="bottomLeft">The bottom-left bounds.</param>
+    /// <param name="topRight">The top-right bounds.</param>
+    public class ElmaLevel(bool intact, string name, uint link, IReadOnlyCollection<ObjectDescription> objects, IReadOnlyCollection<ElmaPolygon> polygons, IReadOnlyCollection<ElmaPolygon> grassPolygons, IReadOnlyCollection<ElmaPicture> pictures, Position<double> bottomLeft, Position<double> topRight)
     {
+        /// <summary>
+        /// Gets a value indicating whether the level was intact while reading.
+        /// </summary>
+        public bool Intact { get; } = intact;
+
         /// <summary>
         /// Gets the name of the level.
         /// </summary>
@@ -39,6 +50,11 @@ namespace ElmaReplayIO
         /// Gets the level's grass polygons.
         /// </summary>
         public IReadOnlyCollection<ElmaPolygon> GrassPolygons { get; } = grassPolygons;
+
+        /// <summary>
+        /// Gets the level's pictures.
+        /// </summary>
+        public IReadOnlyCollection<ElmaPicture> Pictures { get; } = pictures;
 
         /// <summary>
         /// Gets the bottom-left most vertex coordinate (min-x, min-y).
@@ -152,7 +168,33 @@ namespace ElmaReplayIO
                     objects.Add(new ObjectDescription(pos, type, gravity));
                 }
 
-                var res = new ElmaLevel(levelName, link, objects, polygons, grassPolygons, new Position<double>(minX, minY), new Position<double>(maxX, maxY));
+                var pictureCount = (int)Math.Floor(br.ReadDouble());
+                var pictures = new List<ElmaPicture>();
+                for (var i = 0; i < pictureCount; i++)
+                {
+                    var pictureName = new string(br.ReadChars(10).TakeWhile(c => c != 0).ToArray()).Trim();
+                    var textureName = new string(br.ReadChars(10).TakeWhile(c => c != 0).ToArray()).Trim();
+                    var maskName = new string(br.ReadChars(10).TakeWhile(c => c != 0).ToArray()).Trim();
+                    var x = br.ReadDouble();
+                    var y = br.ReadDouble();
+                    var distance = br.ReadInt32();
+                    var clipping = br.ReadInt32();
+                    var picture = new ElmaPicture(pictureName, textureName, maskName, new Position<double>(x, y), distance, clipping);
+                    pictures.Add(picture);
+                }
+
+                var endOfData = br.ReadUInt32();
+                uint EndOfDataMarker = 0x0067103A;
+                var levelOk = endOfData == EndOfDataMarker;
+                
+                // Top10 data is skipped here.
+                var top10 = br.ReadBytes(688);
+
+                var endOfFile = br.ReadUInt32();
+                uint EndOfFileMarker = 0x00845D52;
+                levelOk &= endOfFile == EndOfFileMarker;
+
+                var res = new ElmaLevel(levelOk, levelName, link, objects, polygons, grassPolygons, pictures, new Position<double>(minX, minY), new Position<double>(maxX, maxY));
                 return res;
             }
             catch (EndOfStreamException)
