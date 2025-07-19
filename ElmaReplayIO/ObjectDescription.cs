@@ -13,7 +13,8 @@ namespace ElmaReplayIO
     /// <param name="position">The object position.</param>
     /// <param name="type">The object type.</param>
     /// <param name="appleGravity">The apple gravity.</param>
-    public readonly struct ObjectDescription(Position<double> position, ObjectType type, AppleGravityDirection appleGravity)
+    /// <param name="animationNumber">The animation number.</param>
+    public readonly struct ObjectDescription(Position<double> position, ObjectType type, AppleGravityDirection appleGravity, int animationNumber)
     {
         /// <summary>
         /// The object position.
@@ -30,5 +31,10 @@ namespace ElmaReplayIO
         /// </summary>
         /// <remarks>Will be None for non-apple objects.</remarks>
         public readonly AppleGravityDirection AppleGravity = appleGravity;
+
+        /// <summary>
+        /// The animation number.
+        /// </summary>
+        public readonly int AnimationNumber = animationNumber;
     }
 }

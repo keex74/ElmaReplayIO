@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ElmaReplayPainter": {
+      "commandName": "Project",
+      "commandLineArgs": "dumplev \"C:\\test\\Hoep406.lev\""
+    }
+  }
+}

@@ -21,21 +21,21 @@ namespace ElmaReplayIO
         /// <summary>
         /// A flower / level exit.
         /// </summary>
-        Flower,
+        Flower = 1,
 
         /// <summary>
         /// An apple / food with no gravity change.
         /// </summary>
-        Apple,
+        Apple = 2,
 
         /// <summary>
         /// A killer.
         /// </summary>
-        Killer,
+        Killer = 3,
 
         /// <summary>
         /// The player starting location.
         /// </summary>
-        PlayerStart,
+        PlayerStart = 4,
     }
 }
